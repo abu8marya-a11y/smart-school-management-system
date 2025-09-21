@@ -246,11 +246,16 @@ class SchoolAPITest(APITestCase):
     """Test cases for School API endpoints"""
     
     def setUp(self):
-        self.user = User.objects.create_user(
+        self.admin_user = User.objects.create_user(
+            username='admin',
+            password='testpass123',
+            is_staff=True
+        )
+        
+        self.regular_user = User.objects.create_user(
             username='testuser',
             password='testpass123'
         )
-        self.client.force_authenticate(user=self.user)
         
         self.school_data = {
             'name': 'API Test School',
@@ -261,19 +266,35 @@ class SchoolAPITest(APITestCase):
             'established_date': '2020-01-01'
         }
     
-    def test_create_school(self):
-        """Test creating a school via API"""
+    def test_create_school_as_admin(self):
+        """Test creating a school via API as admin"""
+        self.client.force_authenticate(user=self.admin_user)
         response = self.client.post('/api/schools/', self.school_data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(School.objects.count(), 1)
         self.assertEqual(School.objects.get().name, 'API Test School')
     
-    def test_get_schools_list(self):
-        """Test retrieving schools list"""
+    def test_create_school_as_regular_user(self):
+        """Test that regular users cannot create schools"""
+        self.client.force_authenticate(user=self.regular_user)
+        response = self.client.post('/api/schools/', self.school_data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(School.objects.count(), 0)
+    
+    def test_get_schools_list_as_admin(self):
+        """Test retrieving schools list as admin"""
+        self.client.force_authenticate(user=self.admin_user)
         School.objects.create(**self.school_data)
         response = self.client.get('/api/schools/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 1)
+    
+    def test_get_schools_list_as_regular_user(self):
+        """Test that regular users cannot view schools list"""
+        self.client.force_authenticate(user=self.regular_user)
+        School.objects.create(**self.school_data)
+        response = self.client.get('/api/schools/')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
     
     def test_unauthorized_access(self):
         """Test that unauthenticated users cannot access API"""
@@ -286,11 +307,19 @@ class AttendanceAPITest(APITestCase):
     """Test cases for Attendance API functionality"""
     
     def setUp(self):
-        self.user = User.objects.create_user(
-            username='testuser',
-            password='testpass123'
+        self.admin_user = User.objects.create_user(
+            username='admin',
+            password='testpass123',
+            is_staff=True
         )
-        self.client.force_authenticate(user=self.user)
+        
+        self.teacher_user = User.objects.create_user(
+            username='teacher',
+            first_name="Teacher",
+            last_name="One"
+        )
+        
+        self.client.force_authenticate(user=self.admin_user)
         
         # Create required objects
         self.school = School.objects.create(
@@ -304,12 +333,6 @@ class AttendanceAPITest(APITestCase):
         self.department = Department.objects.create(
             name="Test Department",
             school=self.school
-        )
-        
-        self.teacher_user = User.objects.create_user(
-            username="teacher",
-            first_name="Teacher",
-            last_name="One"
         )
         
         self.teacher = Teacher.objects.create(
@@ -348,8 +371,11 @@ class AttendanceAPITest(APITestCase):
             guardian_phone="1234567890"
         )
     
-    def test_mark_attendance(self):
-        """Test marking attendance for a student"""
+    def test_mark_attendance_as_teacher(self):
+        """Test marking attendance for a student as teacher"""
+        # Authenticate as teacher
+        self.client.force_authenticate(user=self.teacher_user)
+        
         attendance_data = {
             'student': self.student.id,
             'date': date.today().isoformat(),
@@ -364,3 +390,17 @@ class AttendanceAPITest(APITestCase):
         attendance = Attendance.objects.get()
         self.assertEqual(attendance.status, 'present')
         self.assertEqual(attendance.student, self.student)
+    
+    def test_mark_attendance_as_admin(self):
+        """Test marking attendance for a student as admin"""
+        # Already authenticated as admin in setUp
+        attendance_data = {
+            'student': self.student.id,
+            'date': date.today().isoformat(),
+            'status': 'absent',
+            'marked_by': self.teacher.id
+        }
+        
+        response = self.client.post('/api/attendance/', attendance_data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Attendance.objects.count(), 1)

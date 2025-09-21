@@ -20,6 +20,11 @@ from .serializers import (
     ClassSubjectSerializer, AttendanceSerializer, AssessmentSerializer,
     GradeSerializer, TimeTableSerializer
 )
+from .permissions import (
+    IsAdminUser, IsTeacherUser, IsStudentUser, IsOwnerOrReadOnly,
+    IsTeacherOfClassOrReadOnly, CanManageAttendance, CanManageGrades,
+    CanViewStudentData
+)
 
 
 def home(request):
@@ -31,7 +36,7 @@ class SchoolViewSet(viewsets.ModelViewSet):
     """ViewSet for School model"""
     queryset = School.objects.all()
     serializer_class = SchoolSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminUser]  # Only admins can manage schools
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['name', 'address', 'email']
     ordering_fields = ['name', 'established_date']
@@ -42,7 +47,7 @@ class DepartmentViewSet(viewsets.ModelViewSet):
     """ViewSet for Department model"""
     queryset = Department.objects.select_related('school', 'head_of_department__user')
     serializer_class = DepartmentSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminUser]  # Only admins can manage departments
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['school']
     search_fields = ['name', 'description']
@@ -54,12 +59,20 @@ class SubjectViewSet(viewsets.ModelViewSet):
     """ViewSet for Subject model"""
     queryset = Subject.objects.select_related('department')
     serializer_class = SubjectSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]  # All authenticated users can view subjects
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['department', 'is_active', 'credits']
     search_fields = ['name', 'code']
     ordering_fields = ['name', 'code', 'credits']
     ordering = ['name']
+
+    def get_permissions(self):
+        """Only admins can create/update/delete subjects"""
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            permission_classes = [IsAdminUser]
+        else:
+            permission_classes = [IsAuthenticated]
+        return [permission() for permission in permission_classes]
 
 
 class TeacherViewSet(viewsets.ModelViewSet):
@@ -72,6 +85,14 @@ class TeacherViewSet(viewsets.ModelViewSet):
     search_fields = ['employee_id', 'user__first_name', 'user__last_name', 'user__email']
     ordering_fields = ['employee_id', 'hire_date']
     ordering = ['employee_id']
+
+    def get_permissions(self):
+        """Different permissions based on action"""
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            permission_classes = [IsAdminUser]
+        else:
+            permission_classes = [IsAuthenticated]
+        return [permission() for permission in permission_classes]
 
     def get_serializer_class(self):
         if self.action == 'retrieve':
@@ -109,6 +130,14 @@ class ClassViewSet(viewsets.ModelViewSet):
     search_fields = ['name', 'section']
     ordering_fields = ['level', 'section', 'name']
     ordering = ['level', 'section']
+
+    def get_permissions(self):
+        """Only admins can create/update/delete classes"""
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            permission_classes = [IsAdminUser]
+        else:
+            permission_classes = [IsAuthenticated]
+        return [permission() for permission in permission_classes]
 
     def get_serializer_class(self):
         if self.action == 'retrieve':
@@ -154,12 +183,44 @@ class StudentViewSet(viewsets.ModelViewSet):
     """ViewSet for Student model"""
     queryset = Student.objects.select_related('user', 'current_class')
     serializer_class = StudentSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [CanViewStudentData]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['current_class', 'is_active']
     search_fields = ['student_id', 'admission_number', 'user__first_name', 'user__last_name']
     ordering_fields = ['student_id', 'admission_date']
     ordering = ['student_id']
+
+    def get_permissions(self):
+        """Different permissions based on action"""
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            permission_classes = [IsAdminUser]
+        else:
+            permission_classes = [CanViewStudentData]
+        return [permission() for permission in permission_classes]
+
+    def get_queryset(self):
+        """Filter queryset based on user permissions"""
+        user = self.request.user
+        queryset = super().get_queryset()
+        
+        # Admins see all students
+        if user.is_staff:
+            return queryset
+        
+        # Students see only themselves
+        if hasattr(user, 'student_profile'):
+            return queryset.filter(user=user)
+        
+        # Teachers see their students
+        if hasattr(user, 'teacher_profile'):
+            teacher = user.teacher_profile
+            # Students in classes where teacher is class teacher or teaches subjects
+            return queryset.filter(
+                Q(current_class__class_teacher=teacher) |
+                Q(current_class__class_subjects__teacher=teacher)
+            ).distinct()
+        
+        return queryset.none()
 
     def get_serializer_class(self):
         if self.action == 'retrieve':
@@ -221,6 +282,14 @@ class ClassSubjectViewSet(viewsets.ModelViewSet):
     search_fields = ['class_instance__name', 'subject__name', 'teacher__user__first_name']
     ordering = ['class_instance__level', 'class_instance__section', 'subject__name']
 
+    def get_permissions(self):
+        """Only admins can create/update/delete class-subject assignments"""
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            permission_classes = [IsAdminUser]
+        else:
+            permission_classes = [IsAuthenticated]
+        return [permission() for permission in permission_classes]
+
 
 class AttendanceViewSet(viewsets.ModelViewSet):
     """ViewSet for Attendance model"""
@@ -228,12 +297,31 @@ class AttendanceViewSet(viewsets.ModelViewSet):
         'student__user', 'class_subject__subject', 'marked_by__user'
     )
     serializer_class = AttendanceSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [CanManageAttendance]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['student', 'status', 'date', 'class_subject']
     search_fields = ['student__user__first_name', 'student__user__last_name', 'student__student_id']
     ordering_fields = ['date']
     ordering = ['-date']
+
+    def get_queryset(self):
+        """Filter attendance records based on user permissions"""
+        user = self.request.user
+        queryset = super().get_queryset()
+        
+        # Admins see all attendance records
+        if user.is_staff:
+            return queryset
+        
+        # Teachers see attendance for their students only
+        if hasattr(user, 'teacher_profile'):
+            teacher = user.teacher_profile
+            return queryset.filter(
+                Q(student__current_class__class_teacher=teacher) |
+                Q(class_subject__teacher=teacher)
+            ).distinct()
+        
+        return queryset.none()
 
     @action(detail=False, methods=['post'])
     def mark_attendance(self, request):
@@ -285,6 +373,38 @@ class AssessmentViewSet(viewsets.ModelViewSet):
     ordering_fields = ['date', 'name']
     ordering = ['-date']
 
+    def get_permissions(self):
+        """Teachers can manage assessments for their subjects, admins can manage all"""
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            permission_classes = [IsAdminUser]
+        else:
+            permission_classes = [IsAuthenticated]
+        return [permission() for permission in permission_classes]
+
+    def get_queryset(self):
+        """Filter assessments based on user permissions"""
+        user = self.request.user
+        queryset = super().get_queryset()
+        
+        # Admins see all assessments
+        if user.is_staff:
+            return queryset
+        
+        # Teachers see assessments for their subjects
+        if hasattr(user, 'teacher_profile'):
+            teacher = user.teacher_profile
+            return queryset.filter(class_subject__teacher=teacher)
+        
+        # Students see published assessments for their class
+        if hasattr(user, 'student_profile'):
+            student = user.student_profile
+            return queryset.filter(
+                class_subject__class_instance=student.current_class,
+                is_published=True
+            )
+        
+        return queryset
+
     @action(detail=True, methods=['get'])
     def grades_summary(self, request, pk=None):
         """Get grades summary for an assessment"""
@@ -308,12 +428,33 @@ class GradeViewSet(viewsets.ModelViewSet):
         'student__user', 'assessment__class_subject__subject', 'graded_by__user'
     )
     serializer_class = GradeSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [CanManageGrades]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['student', 'assessment', 'grade_letter']
     search_fields = ['student__user__first_name', 'student__user__last_name', 'assessment__name']
     ordering_fields = ['marks_obtained', 'graded_date']
     ordering = ['-graded_date']
+
+    def get_queryset(self):
+        """Filter grades based on user permissions"""
+        user = self.request.user
+        queryset = super().get_queryset()
+        
+        # Admins see all grades
+        if user.is_staff:
+            return queryset
+        
+        # Teachers see grades for their assessments
+        if hasattr(user, 'teacher_profile'):
+            teacher = user.teacher_profile
+            return queryset.filter(assessment__class_subject__teacher=teacher)
+        
+        # Students see their own grades
+        if hasattr(user, 'student_profile'):
+            student = user.student_profile
+            return queryset.filter(student=student)
+        
+        return queryset.none()
 
     @action(detail=False, methods=['get'])
     def class_performance(self, request):
@@ -351,6 +492,14 @@ class TimeTableViewSet(viewsets.ModelViewSet):
     search_fields = ['class_subject__class_instance__name', 'class_subject__subject__name']
     ordering_fields = ['day_of_week', 'start_time']
     ordering = ['day_of_week', 'start_time']
+
+    def get_permissions(self):
+        """Only admins can create/update/delete timetables"""
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            permission_classes = [IsAdminUser]
+        else:
+            permission_classes = [IsAuthenticated]
+        return [permission() for permission in permission_classes]
 
     @action(detail=False, methods=['get'])
     def weekly_schedule(self, request):
