@@ -1,0 +1,259 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - Smart School Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Hero Section -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="bg-primary text-white rounded p-5 text-center">
+                <h1 class="display-4 mb-3">
+                    <i class="fas fa-graduation-cap"></i>
+                    Welcome to Smart School Management System
+                </h1>
+                <p class="lead mb-4">
+                    A comprehensive solution for managing all aspects of your educational institution
+                </p>
+                {% if not user.is_authenticated %}
+                    <a href="{% url 'admin:login' %}" class="btn btn-light btn-lg">
+                        <i class="fas fa-sign-in-alt"></i> Get Started
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if user.is_authenticated %}
+        <!-- Dashboard Cards -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <h2 class="mb-4">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Dashboard
+                    <small class="text-muted">- Welcome back, 
+                        {% if user.first_name %}
+                            {{ user.first_name }}
+                        {% else %}
+                            {{ user.username }}
+                        {% endif %}
+                    </small>
+                </h2>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-5">
+            {% if user.is_staff %}
+                <!-- Admin Dashboard -->
+                <div class="col-md-3">
+                    <div class="card h-100 border-primary">
+                        <div class="card-body text-center">
+                            <i class="fas fa-school fa-3x text-primary mb-3"></i>
+                            <h5 class="card-title">Schools</h5>
+                            <p class="card-text">Manage school information and settings</p>
+                            <a href="/admin/core/school/" class="btn btn-primary">
+                                <i class="fas fa-cog"></i> Manage
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="card h-100 border-success">
+                        <div class="card-body text-center">
+                            <i class="fas fa-user-graduate fa-3x text-success mb-3"></i>
+                            <h5 class="card-title">Students</h5>
+                            <p class="card-text">Student enrollment and records</p>
+                            <a href="/admin/core/student/" class="btn btn-success">
+                                <i class="fas fa-users"></i> View Students
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="card h-100 border-info">
+                        <div class="card-body text-center">
+                            <i class="fas fa-chalkboard-teacher fa-3x text-info mb-3"></i>
+                            <h5 class="card-title">Teachers</h5>
+                            <p class="card-text">Faculty management and assignments</p>
+                            <a href="/admin/core/teacher/" class="btn btn-info">
+                                <i class="fas fa-chalkboard-teacher"></i> View Teachers
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="card h-100 border-warning">
+                        <div class="card-body text-center">
+                            <i class="fas fa-door-open fa-3x text-warning mb-3"></i>
+                            <h5 class="card-title">Classes</h5>
+                            <p class="card-text">Classroom and grade management</p>
+                            <a href="/admin/core/class/" class="btn btn-warning">
+                                <i class="fas fa-door-open"></i> View Classes
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Common Dashboard Items -->
+            <div class="col-md-3">
+                <div class="card h-100 border-danger">
+                    <div class="card-body text-center">
+                        <i class="fas fa-calendar-check fa-3x text-danger mb-3"></i>
+                        <h5 class="card-title">Attendance</h5>
+                        <p class="card-text">Track and manage attendance records</p>
+                        <a href="/admin/core/attendance/" class="btn btn-danger">
+                            <i class="fas fa-calendar-check"></i> View Attendance
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card h-100 border-secondary">
+                    <div class="card-body text-center">
+                        <i class="fas fa-trophy fa-3x text-secondary mb-3"></i>
+                        <h5 class="card-title">Grades</h5>
+                        <p class="card-text">Academic performance and grading</p>
+                        <a href="/admin/core/grade/" class="btn btn-secondary">
+                            <i class="fas fa-trophy"></i> View Grades
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card h-100 border-dark">
+                    <div class="card-body text-center">
+                        <i class="fas fa-file-alt fa-3x text-dark mb-3"></i>
+                        <h5 class="card-title">Assessments</h5>
+                        <p class="card-text">Exams, tests, and evaluations</p>
+                        <a href="/admin/core/assessment/" class="btn btn-dark">
+                            <i class="fas fa-file-alt"></i> View Assessments
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card h-100 border-primary">
+                    <div class="card-body text-center">
+                        <i class="fas fa-code fa-3x text-primary mb-3"></i>
+                        <h5 class="card-title">API Explorer</h5>
+                        <p class="card-text">REST API for external integrations</p>
+                        <a href="/api/" class="btn btn-primary">
+                            <i class="fas fa-code"></i> Explore API
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <h3 class="mb-4"><i class="fas fa-chart-bar"></i> Quick Statistics</h3>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h2 class="text-success">{{ stats.total_students|default:0 }}</h2>
+                        <p class="mb-0">Total Students</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h2 class="text-info">{{ stats.total_teachers|default:0 }}</h2>
+                        <p class="mb-0">Total Teachers</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h2 class="text-warning">{{ stats.total_classes|default:0 }}</h2>
+                        <p class="mb-0">Total Classes</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <!-- Features Section for Non-authenticated Users -->
+        <div class="row mb-5">
+            <div class="col-12">
+                <h2 class="text-center mb-5">
+                    <i class="fas fa-star"></i>
+                    Key Features
+                </h2>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-5">
+            <div class="col-md-4">
+                <div class="card h-100 text-center">
+                    <div class="card-body">
+                        <i class="fas fa-user-graduate fa-3x text-primary mb-3"></i>
+                        <h5 class="card-title">Student Management</h5>
+                        <p class="card-text">Complete student profiles, enrollment, and academic records management</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card h-100 text-center">
+                    <div class="card-body">
+                        <i class="fas fa-calendar-check fa-3x text-success mb-3"></i>
+                        <h5 class="card-title">Attendance Tracking</h5>
+                        <p class="card-text">Real-time attendance monitoring with comprehensive reporting</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card h-100 text-center">
+                    <div class="card-body">
+                        <i class="fas fa-trophy fa-3x text-warning mb-3"></i>
+                        <h5 class="card-title">Grade Management</h5>
+                        <p class="card-text">Academic performance tracking with automated grade calculations</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card h-100 text-center">
+                    <div class="card-body">
+                        <i class="fas fa-chalkboard-teacher fa-3x text-info mb-3"></i>
+                        <h5 class="card-title">Teacher Portal</h5>
+                        <p class="card-text">Faculty management with class assignments and scheduling</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card h-100 text-center">
+                    <div class="card-body">
+                        <i class="fas fa-chart-line fa-3x text-danger mb-3"></i>
+                        <h5 class="card-title">Analytics & Reports</h5>
+                        <p class="card-text">Comprehensive reporting and analytics for data-driven decisions</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card h-100 text-center">
+                    <div class="card-body">
+                        <i class="fas fa-shield-alt fa-3x text-secondary mb-3"></i>
+                        <h5 class="card-title">Security & Access Control</h5>
+                        <p class="card-text">Role-based permissions ensuring data privacy and security</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

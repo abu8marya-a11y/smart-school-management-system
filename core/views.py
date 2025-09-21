@@ -28,8 +28,20 @@ from .permissions import (
 
 
 def home(request):
-    """Basic home view"""
-    return HttpResponse("Welcome to Smart School Management System!")
+    """Home view with dashboard functionality"""
+    context = {}
+    
+    # Add basic statistics if user is authenticated
+    if request.user.is_authenticated:
+        from .models import Student, Teacher, Class
+        
+        context['stats'] = {
+            'total_students': Student.objects.filter(is_active=True).count(),
+            'total_teachers': Teacher.objects.filter(is_active=True).count(),
+            'total_classes': Class.objects.filter(is_active=True).count(),
+        }
+    
+    return render(request, 'home.html', context)
 
 
 class SchoolViewSet(viewsets.ModelViewSet):
