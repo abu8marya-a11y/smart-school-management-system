@@ -48,6 +48,7 @@ THIRD_PARTY_APPS = [
     'crispy_bootstrap5',
     'django_extensions',
     'channels',
+    'django_filters',
 ]
 
 LOCAL_APPS = [
