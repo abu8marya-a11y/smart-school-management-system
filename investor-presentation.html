@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investor Presentation</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Investor Presentation</h1>
+        <p>Smart School Management System</p>
+    </header>
+
+    <section id="executive-summary">
+        <h2>Executive Summary</h2>
+        <p>A brief overview of the business, its goals, and its current status.</p>
+    </section>
+
+    <section id="market-analysis">
+        <h2>Market Analysis</h2>
+        <p>Insights into the market landscape, target audience, and potential growth.</p>
+    </section>
+
+    <section id="competitive-analysis">
+        <h2>Competitive Analysis vs Classera</h2>
+        <p>An overview of the competition and our differentiators.</p>
+    </section>
+
+    <section id="features">
+        <h2>Interactive Animated Books Features</h2>
+        <p>Description of the unique features of our animated books.</p>
+    </section>
+
+    <section id="financial-projections">
+        <h2>Financial Projections</h2>
+        <canvas id="financialChart"></canvas>
+    </section>
+
+    <section id="investment-requirements">
+        <h2>Investment Requirements</h2>
+        <p>We are seeking an investment of $1.2M.</p>
+    </section>
+
+    <section id="roi-analysis">
+        <h2>ROI Analysis</h2>
+        <p>Projected returns of 900%+.</p>
+    </section>
+
+    <section id="team-structure">
+        <h2>Team Structure</h2>
+        <p>Overview of the team involved in the project.</p>
+    </section>
+
+    <section id="implementation-roadmap">
+        <h2>Implementation Roadmap</h2>
+        <p>Timeline and milestones for the project implementation.</p>
+    </section>
+
+    <footer>
+        <p>&copy; 2023 Smart School Management System</p>
+    </footer>
+
+    <script>
+        // Financial Chart
+        const ctx = document.getElementById('financialChart').getContext('2d');
+        const financialChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Year 1', 'Year 2', 'Year 3', 'Year 4', 'Year 5'],
+                datasets: [{
+                    label: 'Projected Revenue',
+                    data: [500000, 800000, 1500000, 3000000, 6000000],
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 2,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
